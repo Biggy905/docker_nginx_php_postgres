@@ -1,0 +1,58 @@
+version: "3.8"
+
+services:
+  r_nginx:
+    container_name: r_nginx
+    image: nginx:latest
+    volumes:
+      - ./src:/var/www/html
+      - ./docker/nginx/nginx.conf:/etc/nginx/conf.d/main.conf
+    ports:
+      - "3200:3200"
+      - "3300:3300"
+    depends_on:
+      - r_php_fpm
+    restart: unless-stopped
+
+  r_php_fpm:
+    platform: linux/x86_64
+    container_name: r_php_fpm
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    volumes:
+      - ./:/app
+    depends_on:
+      - r_postgres
+
+  r_php_cli:
+    platform: linux/x86_64
+    container_name: r_php_cli
+    build:
+      context: .
+      dockerfile: docker/php-cli/Dockerfile
+    volumes:
+      - ./:/app
+    depends_on:
+      - r_postgres
+
+  r_postgres:
+    container_name: r_postgres
+    image: postgres:14-alpine
+    environment:
+      POSTGRES_DB: "db"
+      POSTGRES_USER: "root"
+      POSTGRES_PASSWORD: "root"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-db-data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+networks:
+  default:
+    external: true
+    name: r_network
+
+volumes:
+  postgres-db-data:
